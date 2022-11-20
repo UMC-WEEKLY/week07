@@ -21,5 +21,5 @@ public class GetUserRes {
     private int userIdx;
     private String nickname;
     private String email;
-    private String password;
+//    private String password;
 }
