@@ -7,6 +7,9 @@ import com.example.demo.config.BaseResponse;
 import com.example.demo.src.user.model.*;
 import com.example.demo.utils.JwtService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,10 +19,10 @@ import static com.example.demo.config.BaseResponseStatus.*;
 import static com.example.demo.utils.ValidationRegex.isRegexEmail;
 
 @RestController // Rest API 또는 WebAPI를 개발하기 위한 어노테이션. @Controller + @ResponseBody 를 합친것.
-                // @Controller      [Presentation Layer에서 Contoller를 명시하기 위해 사용]
-                //  [Presentation Layer?] 클라이언트와 최초로 만나는 곳으로 데이터 입출력이 발생하는 곳
-                //  Web MVC 코드에 사용되는 어노테이션. @RequestMapping 어노테이션을 해당 어노테이션 밑에서만 사용할 수 있다.
-                // @ResponseBody    모든 method의 return object를 적절한 형태로 변환 후, HTTP Response Body에 담아 반환.
+// @Controller      [Presentation Layer에서 Contoller를 명시하기 위해 사용]
+//  [Presentation Layer?] 클라이언트와 최초로 만나는 곳으로 데이터 입출력이 발생하는 곳
+//  Web MVC 코드에 사용되는 어노테이션. @RequestMapping 어노테이션을 해당 어노테이션 밑에서만 사용할 수 있다.
+// @ResponseBody    모든 method의 return object를 적절한 형태로 변환 후, HTTP Response Body에 담아 반환.
 @RequestMapping("/app/users")
 // method가 어떤 HTTP 요청을 처리할 것인가를 작성한다.
 // 요청에 대해 어떤 Controller, 어떤 메소드가 처리할지를 맵핑하기 위한 어노테이션
@@ -99,9 +102,9 @@ public class UserController {
     /**
      * 모든 회원들의  조회 API
      * [GET] /users
-     *
+     * <p>
      * 또는
-     *
+     * <p>
      * 해당 닉네임을 같는 유저들의 정보 조회 API
      * [GET] /users? NickName=
      */
@@ -110,7 +113,9 @@ public class UserController {
     //  JSON은 HTTP 통신 시, 데이터를 주고받을 때 많이 쓰이는 데이터 포맷.
     @GetMapping("") // (GET) 127.0.0.1:9000/app/users
     // GET 방식의 요청을 매핑하기 위한 어노테이션
-    public BaseResponse<List<GetUserRes>> getUsers(@RequestParam(required = false) String nickname) {
+    public BaseResponse<List<GetUserRes>> getUsers(@RequestParam(required = false)
+                                                       @PageableDefault(size = 5, sort = "userIdx", direction = Sort.Direction.DESC)
+                                                       String nickname) {
         //  @RequestParam은, 1개의 HTTP Request 파라미터를 받을 수 있는 어노테이션(?뒤의 값). default로 RequestParam은 반드시 값이 존재해야 하도록 설정되어 있지만, (전송 안되면 400 Error 유발)
         //  지금 예시와 같이 required 설정으로 필수 값에서 제외 시킬 수 있음
         //  defaultValue를 통해, 기본값(파라미터가 없는 경우, 해당 파라미터의 기본값 설정)을 지정할 수 있음
@@ -126,12 +131,9 @@ public class UserController {
             return new BaseResponse<>((exception.getStatus()));
         }
     }
-    /**
-
-
-
 
     /**
+     * /**
      * 회원 1명 조회 API
      * [GET] /users/:userIdx
      */
@@ -156,6 +158,7 @@ public class UserController {
      * 유저정보변경 API
      * [PATCH] /users/:userIdx
      */
+    @Transactional
     @ResponseBody
     @PatchMapping("/{userIdx}")
     public BaseResponse<String> modifyUserName(@PathVariable("userIdx") int userIdx, @RequestBody User user) {
@@ -163,7 +166,7 @@ public class UserController {
             //jwt에서 idx 추출.
             int userIdxByJwt = jwtService.getUserIdx();
             //userIdx와 접근한 유저가 같은지 확인
-            if(userIdx != userIdxByJwt){
+            if (userIdx != userIdxByJwt) {
                 return new BaseResponse<>(INVALID_USER_JWT);
             }
             //같다면 유저네임 변경
